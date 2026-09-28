@@ -2,5 +2,5 @@
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')
 
-include ':desipayments-sunmi-printer'
-project(':desipayments-sunmi-printer').projectDir = new File('../node_modules/@desipayments/sunmi-printer/android')
+include ':printer-sunmi'
+project(':printer-sunmi').projectDir = new File('../node_modules/printer-sunmi/android')

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
+import { SalesReceiptButton } from "./SalesReceiptButton";
 
 import {
   Printer,
   type GetPrintersResult,
   type OrderReceiptInfo,
+  type OrderReceiptItem,
   type PrinterAssignmentsResult,
   type PrinterInfo,
   type PrinterTag,
@@ -401,59 +403,55 @@ function App() {
 
   // ============================================================
   // GENERATE ORDER DATA
-  // ============================================================
+  // ============================================================a
 
   const generateOrderData = (
     type:
       | "takeaway"
       | "table",
   ): OrderReceiptInfo => {
-    const items = [
-      {
-        name: "Classic Burger",
-        quantity: 2,
-        rate: 12.99,
-        total: 25.98,
-        specialInstruction:
-          "No onions\nExtra crispy",
-      },
-
-      {
-        name: "Extra Cheese",
-        quantity: 1,
-        rate: 1.5,
-        total: 1.5,
-        isModifier: true,
-      },
-
-      {
-        name: "Cheese Pizza",
-        quantity: 1,
-        rate: 14.99,
-        total: 14.99,
-      },
-
-      {
-        name: "French Fries",
-        quantity: 3,
-        rate: 4.99,
-        total: 14.97,
-        specialInstruction:
-          "Less salt",
-      },
-
-      {
-        name: "Soft Drink",
-        quantity: 2,
-        rate: 2.99,
-        total: 5.98,
-      },
-    ];
+   const items: OrderReceiptItem[] = [
+  {
+    name: "Classic Burger",
+    quantity: "2",
+    rate: "$12.99",
+    total: "$25.98",
+    specialInstruction:
+      "No onions\nExtra crispy",
+  },
+  {
+    name: "Extra Cheese",
+    quantity: "1",
+    rate: "$1.50",
+    total: "$1.50",
+    isModifier: true,
+  },
+  {
+    name: "Cheese Pizza",
+    quantity: "1",
+    rate: "$14.99",
+    total: "$14.99",
+  },
+  {
+    name: "French Fries",
+    quantity: "3",
+    rate: "$4.99",
+    total: "$14.97",
+    specialInstruction:
+      "Less salt",
+  },
+  {
+    name: "Soft Drink",
+    quantity: "2",
+    rate: "$2.99",
+    total: "$5.98",
+  },
+];
 
     const subtotal =
       items.reduce(
         (sum, item) =>
-          sum + item.total,
+          sum + Number(item.total.replace("$", "")),
         0,
       );
 
@@ -473,11 +471,6 @@ function App() {
       taxAmount +
       serviceCharge -
       discountAmount;
-
-    const currencySymbol =
-      type === "table"
-        ? "$"
-        : "৳";
 
     return {
       restaurantName:
@@ -524,36 +517,35 @@ function App() {
       paymentMethod:
         "Card",
 
-      currency_symbol:
-        currencySymbol,
+      subtotal:
+        `$${subtotal.toFixed(2)}`,
 
-      subtotal,
-
-      total,
+      total:
+        `$${total.toFixed(2)}`,
 
       tax: {
         label: "Tax (10%):",
-        amount: taxAmount,
+        amount: `$${taxAmount.toFixed(2)}`,
       },
 
       fees: {
-        label: `Fees (${currencySymbol}):`,
-        amount: 0,
+        label: "Fees:",
+        amount: "$0.00",
       },
 
       gratuity: {
-        label: `Gratuity Fees (${currencySymbol}):`,
-        amount: serviceCharge,
+        label: "Gratuity Fees:",
+        amount: `$${serviceCharge.toFixed(2)}`,
       },
 
       discount: {
         label: "Discount (5%):",
-        amount: -discountAmount,
+        amount: `-$${discountAmount.toFixed(2)}`,
       },
 
       tips: {
-        label: `Tips (${currencySymbol}):`,
-        amount: 0,
+        label: "Tips:",
+        amount: "$0.00",
       },
 
       cardNumber:
@@ -573,28 +565,28 @@ function App() {
         type === "table",
 
       tip5Tip:
-        (total * 0.05).toFixed(2),
+        `$${(total * 0.05).toFixed(2)}`,
 
       tip5Total:
-        (total * 1.05).toFixed(2),
+        `$${(total * 1.05).toFixed(2)}`,
 
       tip10Tip:
-        (total * 0.1).toFixed(2),
+        `$${(total * 0.1).toFixed(2)}`,
 
       tip10Total:
-        (total * 1.1).toFixed(2),
+        `$${(total * 1.1).toFixed(2)}`,
 
       tip15Tip:
-        (total * 0.15).toFixed(2),
+        `$${(total * 0.15).toFixed(2)}`,
 
       tip15Total:
-        (total * 1.15).toFixed(2),
+        `$${(total * 1.15).toFixed(2)}`,
 
       tip20Tip:
-        (total * 0.2).toFixed(2),
+        `$${(total * 0.2).toFixed(2)}`,
 
       tip20Total:
-        (total * 1.2).toFixed(2),
+        `$${(total * 1.2).toFixed(2)}`,
     };
   };
 
@@ -728,14 +720,11 @@ function App() {
       );
 
       addLog(
-        `   Items: ${orderInfo.items.length}`,
+        `   Items: ${orderInfo.items?.length}`,
       );
 
       addLog(
-        `   Total: ${
-          orderInfo.currency_symbol ??
-          ""
-        }${orderInfo.total.toFixed(2)}`,
+        `   Total: ${orderInfo.total}`,
       );
 
       await Printer.print({
@@ -1636,7 +1625,7 @@ function App() {
                         : "rgba(255,255,255,0.08)",
                   }}
                 >
-                  🛍️ Takeaway (৳)
+                  🛍️ Takeaway
                 </button>
 
                 <button
@@ -1819,7 +1808,11 @@ function App() {
               >
                 🍳 Print Kitchen
               </button>
-
+                <SalesReceiptButton
+                  tag="RECEIPT"
+                  disabled={!ready || printingTag !== null || !assignments.RECEIPT}
+                  onLog={addLog}
+                />
               <button
                 type="button"
                 onClick={() =>
