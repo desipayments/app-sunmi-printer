@@ -58,6 +58,10 @@ function App() {
     "takeaway" | "table"
   >("table");
 
+  const [receiptType, setReceiptType] = useState<
+    "sale" | "refund" | "void"
+  >("sale");
+
   const logContainerRef =
     useRef<HTMLDivElement>(null);
 
@@ -406,95 +410,89 @@ function App() {
   // ============================================================a
 
   const generateOrderData = (
-    type:
-      | "takeaway"
-      | "table",
+    type: "takeaway" | "table",
   ): OrderReceiptInfo => {
-   const items: OrderReceiptItem[] = [
-  {
-    name: "Classic Burger",
-    quantity: "2",
-    rate: "$12.99",
-    total: "$25.98",
-    specialInstruction:
-      "No onions\nExtra crispy",
-  },
-  {
-    name: "Extra Cheese",
-    quantity: "1",
-    rate: "$1.50",
-    total: "$1.50",
-    isModifier: true,
-  },
-  {
-    name: "Cheese Pizza",
-    quantity: "1",
-    rate: "$14.99",
-    total: "$14.99",
-  },
-  {
-    name: "French Fries",
-    quantity: "3",
-    rate: "$4.99",
-    total: "$14.97",
-    specialInstruction:
-      "Less salt",
-  },
-  {
-    name: "Soft Drink",
-    quantity: "2",
-    rate: "$2.99",
-    total: "$5.98",
-  },
-];
+    const items: OrderReceiptItem[] = [
+      {
+        name: "Classic Burger",
+        quantity: "2",
+        rate: "$12.99",
+        total: "$25.98",
+        specialInstruction: "No onions\nExtra crispy",
+      },
+      {
+        name: "Extra Cheese",
+        quantity: "1",
+        rate: "$1.50",
+        total: "$1.50",
+        isModifier: true,
+      },
+      {
+        name: "Cheese Pizza",
+        quantity: "1",
+        rate: "$14.99",
+        total: "$14.99",
+      },
+      {
+        name: "French Fries",
+        quantity: "3",
+        rate: "$4.99",
+        total: "$14.97",
+        specialInstruction: "Less salt",
+      },
+      {
+        name: "Soft Drink",
+        quantity: "2",
+        rate: "$2.99",
+        total: "$5.98",
+      },
+    ];
 
-    const subtotal =
-      items.reduce(
-        (sum, item) =>
-          sum + Number(item.total.replace("$", "")),
-        0,
-      );
+    const subtotal = items.reduce(
+      (sum, item) =>
+        sum + Number(item.total.replace("$", "")),
+      0,
+    );
 
-    const taxAmount =
-      subtotal * 0.1;
-
-    const serviceCharge =
-      type === "table"
-        ? subtotal * 0.1
-        : 0;
-
-    const discountAmount =
-      subtotal * 0.05;
+    const taxAmount = subtotal * 0.1;
+    const feesAmount = 0;
+    const gratuityAmount =
+      type === "table" ? subtotal * 0.1 : 0;
+    const discountAmount = subtotal * 0.05;
+    const tipsAmount = 0;
 
     const total =
       subtotal +
       taxAmount +
-      serviceCharge -
-      discountAmount;
+      feesAmount +
+      gratuityAmount -
+      discountAmount +
+      tipsAmount;
+
+    const isSale = receiptType === "sale";
+    const isRefund = receiptType === "refund";
+    const isVoid = receiptType === "void";
 
     return {
-      restaurantName:
-        "OneBalance Restaurant",
+      restaurantName: "OneBalance Restaurant",
+      address: "8966 211th Street, Queens, NY 11427",
+      phone: "+1 (929) 386-9131",
+      email: "sales@onebalancepay.com",
+      logo: "https://restaurant.onebalancepay.com/logo.png",
 
-      address:
-        "8966 211th Street, Queens, NY 11427",
-
-      phone:
-        "+1 (929) 386-9131",
-
-      email:
-        "sales@onebalancepay.com",
-
-      logo:
-        "https://restaurant.onebalancepay.com/logo.png",
+      reciptType: receiptType.toUpperCase(),
+      reciptTypeId: isRefund
+        ? `REF-${Date.now()}`
+        : isVoid
+          ? `VOID-${Date.now()}`
+          : "",
 
       orderNumber:
         type === "table"
           ? `TBL-${Date.now()}`
           : `TAK-${Date.now()}`,
 
-      createdAt:
-        new Date().toLocaleString(),
+      createdAt: new Date().toLocaleString(),
 
       salesType:
         type === "table"
@@ -514,14 +512,10 @@ function App() {
       orderNotes:
         "Please prepare quickly. Serve hot.",
 
-      paymentMethod:
-        "Card",
+      paymentMethod: "Card",
 
-      subtotal:
-        `$${subtotal.toFixed(2)}`,
-
-      total:
-        `$${total.toFixed(2)}`,
+      subtotal: `$${subtotal.toFixed(2)}`,
+      total: `$${total.toFixed(2)}`,
 
       tax: {
         label: "Tax (10%):",
@@ -530,12 +524,12 @@ function App() {
 
       fees: {
         label: "Fees:",
-        amount: "$0.00",
+        amount: `$${feesAmount.toFixed(2)}`,
       },
 
       gratuity: {
         label: "Gratuity Fees:",
-        amount: `$${serviceCharge.toFixed(2)}`,
+        amount: `$${gratuityAmount.toFixed(2)}`,
       },
 
       discount: {
@@ -545,48 +539,87 @@ function App() {
 
       tips: {
         label: "Tips:",
-        amount: "$0.00",
+        amount: `$${tipsAmount.toFixed(2)}`,
       },
 
-      cardNumber:
-        "•••• •••• •••• 1234",
-
-      cardType:
-        "Visa",
-
       items,
+
+      // Card payment fields
+      cardNumber: "•••• •••• •••• 1234",
+      cardType: "Visa",
+      authCode: "AUTH123456",
+      transactionId: `TXN-${Date.now()}`,
+      paidAmount: `$${total.toFixed(2)}`,
+
+      // Cash fields are also supplied so the payload supports the
+      // native receipt implementation when the payment method changes.
+      tenderedAmount: `$${Math.ceil(total / 10) * 10}`,
+      changeAmount: `$${(
+        Math.ceil(total / 10) * 10 -
+        total
+      ).toFixed(2)}`,
+
+      // Refund
+      refundAmount: isRefund
+        ? `$${total.toFixed(2)}`
+        : "",
+      refundMethod: isRefund
+        ? "Original Card"
+        : "",
+
+      // Void
+      voidAmount: isVoid
+        ? `$${total.toFixed(2)}`
+        : "",
+      voidTime: isVoid
+        ? new Date().toLocaleString()
+        : "",
+
+      // Refund / Void operation information
+      operationReason: isRefund
+        ? "Customer requested refund"
+        : isVoid
+          ? "Order cancelled by customer"
+          : "",
+
+      operationBy:
+        isRefund || isVoid
+          ? "John Doe"
+          : "",
+
+      transactionStatus: isSale
+        ? "PAID"
+        : isRefund
+          ? "REFUNDED"
+          : "VOIDED",
+
+      showTipSuggestions:
+        isSale && type === "table",
+
+      tip5Tip:
+        `$${(total * 0.05).toFixed(2)}`,
+      tip5Total:
+        `$${(total * 1.05).toFixed(2)}`,
+
+      tip10Tip:
+        `$${(total * 0.10).toFixed(2)}`,
+      tip10Total:
+        `$${(total * 1.10).toFixed(2)}`,
+
+      tip15Tip:
+        `$${(total * 0.15).toFixed(2)}`,
+      tip15Total:
+        `$${(total * 1.15).toFixed(2)}`,
+
+      tip20Tip:
+        `$${(total * 0.20).toFixed(2)}`,
+      tip20Total:
+        `$${(total * 1.20).toFixed(2)}`,
 
       footerMessage:
         type === "table"
           ? "Thank you for dining with us!\nWe hope you enjoyed your meal."
           : "Thank you for your takeaway order!\nWe hope to see you again!",
-
-      showTipSuggestions:
-        type === "table",
-
-      tip5Tip:
-        `$${(total * 0.05).toFixed(2)}`,
-
-      tip5Total:
-        `$${(total * 1.05).toFixed(2)}`,
-
-      tip10Tip:
-        `$${(total * 0.1).toFixed(2)}`,
-
-      tip10Total:
-        `$${(total * 1.1).toFixed(2)}`,
-
-      tip15Tip:
-        `$${(total * 0.15).toFixed(2)}`,
-
-      tip15Total:
-        `$${(total * 1.15).toFixed(2)}`,
-
-      tip20Tip:
-        `$${(total * 0.2).toFixed(2)}`,
-
-      tip20Total:
-        `$${(total * 1.2).toFixed(2)}`,
     };
   };
 
@@ -701,7 +734,7 @@ function App() {
         generateOrderData(orderType);
 
       addLog(
-        `🧾 Printing ${tag}...`,
+        `🧾 Printing ${receiptType.toUpperCase()} ${tag}...`,
       );
 
       addLog(
@@ -1645,6 +1678,54 @@ function App() {
                   }}
                 >
                   🍽️ Table ($)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReceiptType("refund")
+                  }
+                  style={{
+                    ...styles.button,
+                    background:
+                      receiptType === "refund"
+                        ? "linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)"
+                        : "rgba(255,255,255,0.08)",
+                  }}
+                >
+                  ↩️ Refund
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReceiptType("void")
+                  }
+                  style={{
+                    ...styles.button,
+                    background:
+                      receiptType === "void"
+                        ? "linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+                        : "rgba(255,255,255,0.08)",
+                  }}
+                >
+                  ✕ Void
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReceiptType("sale")
+                  }
+                  style={{
+                    ...styles.button,
+                    background:
+                      receiptType === "sale"
+                        ? "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+                        : "rgba(255,255,255,0.08)",
+                  }}
+                >
+                  💳 Sale
                 </button>
               </div>
             </div>
