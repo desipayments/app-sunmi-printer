@@ -19,10 +19,10 @@ const buildSalesData = (): SalesReceiptInfo => ({
     {
       saleBy: "Cash",
       transaction: "42",
-      totalSales: "$1250.00",
-      refunds: "$50.00",
-      manualRefunds: "$0.00",
-      collectedAmount: "$1200.00",
+      totalSales: "৳1250.00",
+      refunds: "৳50.00",
+      manualRefunds: "৳0.00",
+      collectedAmount: "৳1200.00",
     },
     {
       saleBy: "Card",
